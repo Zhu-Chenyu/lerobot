@@ -28,12 +28,12 @@ class RealSenseCameraConfig(CameraConfig):
     Example configurations for Intel RealSense D405:
     ```python
     # Basic configurations
-    RealSenseCameraConfig("0123456789", 30, 1280, 720)   # 1280x720 @ 30FPS
-    RealSenseCameraConfig("0123456789", 60, 640, 480)   # 640x480 @ 60FPS
+    RealSenseCameraConfig("0123456789", 30, 1280, 720)  # 1280x720 @ 30FPS
+    RealSenseCameraConfig("0123456789", 60, 640, 480)  # 640x480 @ 60FPS
 
     # Advanced configurations
     RealSenseCameraConfig("0123456789", 30, 640, 480, use_depth=True)  # With depth sensing
-    RealSenseCameraConfig("0123456789", 30, 640, 480, rotation=Cv2Rotation.ROTATE_90)     # With 90° rotation
+    RealSenseCameraConfig("0123456789", 30, 640, 480, rotation=Cv2Rotation.ROTATE_90)  # With 90° rotation
     ```
 
     Attributes:
@@ -59,21 +59,9 @@ class RealSenseCameraConfig(CameraConfig):
     rotation: Cv2Rotation = Cv2Rotation.NO_ROTATION
     warmup_s: int = 1
 
-    def __post_init__(self):
-        if self.color_mode not in (ColorMode.RGB, ColorMode.BGR):
-            raise ValueError(
-                f"`color_mode` is expected to be {ColorMode.RGB.value} or {ColorMode.BGR.value}, but {self.color_mode} is provided."
-            )
-
-        if self.rotation not in (
-            Cv2Rotation.NO_ROTATION,
-            Cv2Rotation.ROTATE_90,
-            Cv2Rotation.ROTATE_180,
-            Cv2Rotation.ROTATE_270,
-        ):
-            raise ValueError(
-                f"`rotation` is expected to be in {(Cv2Rotation.NO_ROTATION, Cv2Rotation.ROTATE_90, Cv2Rotation.ROTATE_180, Cv2Rotation.ROTATE_270)}, but {self.rotation} is provided."
-            )
+    def __post_init__(self) -> None:
+        self.color_mode = ColorMode(self.color_mode)
+        self.rotation = Cv2Rotation(self.rotation)
 
         values = (self.fps, self.width, self.height)
         if any(v is not None for v in values) and any(v is None for v in values):
