@@ -294,6 +294,48 @@ def make_pre_post_processors(
             kwargs["preprocessor_overrides"] = preprocessor_overrides
             kwargs["postprocessor_overrides"] = postprocessor_overrides
 
+        elif isinstance(policy_cfg, MolmoAct2Config):
+            from .molmoact2.processor_molmoact2 import (
+                _add_gripper_masks_to_stats,
+                _normalization_masks_from_stats,
+            )
+
+            preprocessor_overrides = dict(kwargs.get("preprocessor_overrides") or {})
+            postprocessor_overrides = dict(kwargs.get("postprocessor_overrides") or {})
+
+            # MolmoAct2 uses molmoact2_masked_normalizer instead of normalizer_processor
+            if "normalizer_processor" in preprocessor_overrides:
+                normalizer_override = preprocessor_overrides.pop("normalizer_processor")
+                raw_stats = normalizer_override.get("stats")
+                masked_stats = _add_gripper_masks_to_stats(
+                    raw_stats,
+                    None,
+                    normalize_gripper=policy_cfg.normalize_gripper,
+                    dataset_feature_names=policy_cfg.dataset_feature_names,
+                )
+                normalizer_override["stats"] = masked_stats
+                preprocessor_overrides["molmoact2_masked_normalizer"] = normalizer_override
+                normalization_masks = _normalization_masks_from_stats(masked_stats)
+                preprocessor_overrides["molmoact2_clamp_normalized"] = {
+                    "normalization_masks": normalization_masks
+                }
+
+            # MolmoAct2 uses molmoact2_masked_unnormalizer instead of unnormalizer_processor
+            if "unnormalizer_processor" in postprocessor_overrides:
+                unnormalizer_override = postprocessor_overrides.pop("unnormalizer_processor")
+                raw_stats = unnormalizer_override.get("stats")
+                masked_stats = _add_gripper_masks_to_stats(
+                    raw_stats,
+                    None,
+                    normalize_gripper=policy_cfg.normalize_gripper,
+                    dataset_feature_names=policy_cfg.dataset_feature_names,
+                )
+                unnormalizer_override["stats"] = masked_stats
+                postprocessor_overrides["molmoact2_masked_unnormalizer"] = unnormalizer_override
+
+            kwargs["preprocessor_overrides"] = preprocessor_overrides
+            kwargs["postprocessor_overrides"] = postprocessor_overrides
+
         preprocessor = PolicyProcessorPipeline.from_pretrained(
             pretrained_model_name_or_path=pretrained_path,
             config_filename=kwargs.get(
