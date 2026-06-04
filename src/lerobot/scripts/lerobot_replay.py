@@ -122,9 +122,10 @@ def replay(cfg: ReplayConfig):
             for i, name in enumerate(dataset.features[ACTION]["names"]):
                 action[name] = action_array[i]
 
-            robot_obs = robot.get_observation()
-
-            processed_action = robot_action_processor((action, robot_obs))
+            # The default processor is an identity no-op and does not use the
+            # observation, so skip the (slow) per-frame camera/CAN read to keep
+            # playback at the recorded fps.
+            processed_action = robot_action_processor((action, {}))
 
             _ = robot.send_action(processed_action)
 
